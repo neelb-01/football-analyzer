@@ -22,8 +22,17 @@ async function loadMatch() {
         text += `Shots: ${data.shots}\n`;
         text += `xG: ${data.totalXG}\n\n`;
 
-        text += "Player xG:\n";
+        // Player totals
+        text += "Player Totals:\n";
 
+        for (let player in data.playerTotals) {
+            text += `${player}: ${data.playerTotals[player]}\n`;
+        }
+
+        text += "\n------------------\n\n";
+        text += "Shot Breakdown:\n";
+
+        // Individual shots
         data.breakdown.forEach(s => {
             text += `${s.player}: ${s.xg}\n`;
         });

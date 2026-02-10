@@ -62,10 +62,25 @@ app.get("/xg/:id", (req, res) => {
 
     const result = calculateXG(shots);
 
+    // Aggregate per player
+    const playerTotals = {};
+
+    result.shots.forEach(s => {
+        if (!playerTotals[s.player]) {
+            playerTotals[s.player] = 0;
+        }
+        playerTotals[s.player] += s.xg;
+    });
+
+    for (let p in playerTotals) {
+        playerTotals[p] = Number(playerTotals[p].toFixed(3));
+    }
+
     res.json({
-        matchId: matchId,
+        matchId,
         shots: shots.length,
         totalXG: result.totalXG,
+        playerTotals,
         breakdown: result.shots
     });
 });
