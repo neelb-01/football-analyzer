@@ -22,12 +22,27 @@ async function loadMatch() {
         text += `Shots: ${data.shots}\n`;
         text += `xG: ${data.totalXG}\n\n`;
 
-        // Player totals
-        text += "Player Totals:\n";
+        text += "Team xG:\n";
 
-        for (let player in data.playerTotals) {
-            text += `${player}: ${data.playerTotals[player]}\n`;
+        for (let team in data.teamTotals) {
+            text += `${team}: ${data.teamTotals[team]}\n`;
         }
+
+        text += "\n";
+
+        // Leaderboard
+        text += "🏆 Top Players (xG)\n\n";
+
+        // Sort players by xG descending
+        const sortedPlayers = Object.entries(data.playerTotals)
+            .sort((a, b) => b[1] - a[1]);
+
+        let rank = 1;
+
+        sortedPlayers.forEach(([player, xg]) => {
+            text += `${rank}. ${player}: ${xg}\n`;
+            rank++;
+        });
 
         text += "\n------------------\n\n";
         text += "Shot Breakdown:\n";

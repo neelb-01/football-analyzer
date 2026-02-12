@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.static("frontend"));
 
-// Simple xG model (basic version)
+// xG model
 function calculateXG(shots) {
     let total = 0;
 
@@ -17,13 +17,72 @@ function calculateXG(shots) {
         const x = shot.location?.[0] || 0;
         const y = shot.location?.[1] || 0;
 
-        // Distance from goal (very rough)
-        const distance = Math.sqrt(
-            Math.pow(120 - x, 2) + Math.pow(40 - y, 2)
-        );
+        const goalX = 120;
+        const goalY = 40;
 
-        // Basic formula
-        let xg = Math.max(0, 1 - distance / 50);
+        const dx = goalX - x;
+        const dy = goalY - y;
+
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // --- ANGLE CALCULATION ---
+        const leftPostY = 36;
+        const rightPostY = 44;
+
+        const angleToLeft = Math.atan2(leftPostY - y, goalX - x);
+        const angleToRight = Math.atan2(rightPostY - y, goalX - x);
+
+        let angle = Math.abs(angleToRight - angleToLeft);
+
+        if (angle > Math.PI) {
+            angle = 2 * Math.PI - angle;
+        }
+
+        // --- PENALTY OVERRIDE ---
+        if (shot.shot?.type?.name === "Penalty") {
+            total += 0.79;
+
+            return {
+                player: shot.player?.name || "Unknown",
+                xg: 0.79
+            };
+        }
+
+        // --- BODY PART FACTOR ---
+        let bodyFactor = 1;
+        const bodyPart = shot.shot?.body_part?.name;
+
+        if (bodyPart === "Head") {
+            bodyFactor = 0.7;  // headers generally lower xG
+        }
+
+        // --- SHOT TYPE FACTOR ---
+        let typeFactor = 1;
+        const shotType = shot.shot?.type?.name;
+
+        if (shotType === "Free Kick") {
+            typeFactor = 0.6;
+        }
+
+        // --- DEFENSIVE PRESSURE ---
+        let pressureFactor = 1;
+
+        if (shot.under_pressure === true) {
+            pressureFactor = 0.8;
+        }
+
+        // --- LOGISTIC BASE MODEL ---
+        const linear =
+            -2.0
+            - 0.04 * distance
+            + 2.0 * angle;
+
+        let xg = 1 / (1 + Math.exp(-linear));
+
+        // Apply modifiers
+        xg = xg * bodyFactor * typeFactor * pressureFactor;
+
+        xg = Math.max(0, Math.min(1, xg));
 
         total += xg;
 
@@ -62,8 +121,48 @@ app.get("/xg/:id", (req, res) => {
 
     const result = calculateXG(shots);
 
-    // Aggregate per player
+    // --- TEAM TOTALS ---
+    const teamTotals = {};
+
+    shots.forEach((shot, index) => {
+        const teamName = shot.team?.name || "Unknown";
+
+        const shotXG = result.shots[index].xg;
+
+        if (!teamTotals[teamName]) {
+            teamTotals[teamName] = 0;
+        }
+
+        teamTotals[teamName] += shotXG;
+    });
+
+    // Round team totals
+    for (let t in teamTotals) {
+        teamTotals[t] = Number(teamTotals[t].toFixed(3));
+    }
+
+    // --- PLAYER TOTALS ---
     const playerTotals = {};
+
+    result.shots.forEach(s => {
+        if (!playerTotals[s.player]) {
+            playerTotals[s.player] = 0;
+        }
+        playerTotals[s.player] += s.xg;
+    });
+
+    for (let p in playerTotals) {
+        playerTotals[p] = Number(playerTotals[p].toFixed(3));
+    }
+
+    res.json({
+        matchId,
+        shots: shots.length,
+        totalXG: result.totalXG,
+        teamTotals,
+        playerTotals,
+        breakdown: result.shots
+    });
 
     result.shots.forEach(s => {
         if (!playerTotals[s.player]) {
@@ -88,11 +187,6 @@ app.get("/xg/:id", (req, res) => {
 // Emergency test route
 app.get("/ping", (req, res) => {
     res.send("PONG");
-});
-
-// Root test
-app.get("/", (req, res) => {
-    res.send("Football Analyzer Backend Running");
 });
 
 // Match endpoint
