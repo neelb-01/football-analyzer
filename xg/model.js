@@ -14,6 +14,10 @@ function calculateXG(shots) {
         const dy = goalY - y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
+        // NORMALIZE distance
+        const maxDistance = 40;
+        const normDistance = Math.min(distance / maxDistance, 1);
+
         // Angle
         const leftPostY = 36;
         const rightPostY = 44;
@@ -23,6 +27,10 @@ function calculateXG(shots) {
 
         let angle = Math.abs(angleToRight - angleToLeft);
         if (angle > Math.PI) angle = 2 * Math.PI - angle;
+
+        // NORMALIZE angle (0 → 1)
+        const maxAngle = Math.PI / 2; // 90 degrees
+        const normAngle = Math.min(angle / maxAngle, 1);
 
         // Penalty
         if (shot.shot?.type?.name === "Penalty") {
@@ -41,9 +49,9 @@ function calculateXG(shots) {
 
         // Logistic model
         const linear =
-            -3.5
-            - 0.08 * distance
-            + 1.5 * angle;
+            -2.2
+            - 4.0 * normDistance
+            + 1.8 * normAngle;
 
         let xg = 1 / (1 + Math.exp(-linear));
         xg *= bodyFactor * typeFactor * pressureFactor;

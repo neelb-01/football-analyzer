@@ -22,10 +22,10 @@ async function loadMatch() {
         text += `Shots: ${data.shots}\n`;
         text += `xG: ${data.totalXG}\n\n`;
 
-        text += "Team xG:\n";
+        text += "\nTeam xG:\n";
 
-        for (let team in data.teamTotals) {
-            text += `${team}: ${data.teamTotals[team]}\n`;
+        for (const [team, xg] of Object.entries(data.teamTotals)) {
+            text += `${team}: ${xg}\n`;
         }
 
         text += "\n";
