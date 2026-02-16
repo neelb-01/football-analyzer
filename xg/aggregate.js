@@ -15,15 +15,12 @@ function aggregateByPlayer(shots) {
     return totals;
 }
 
-function aggregateByTeam(shots, shotResults) {
+function aggregateByTeam(shots) {
     const totals = {};
 
-    shots.forEach((shot, index) => {
-        const teamName = shot.team?.name || "Unknown";
-        const xg = shotResults[index].xg;
-
-        if (!totals[teamName]) totals[teamName] = 0;
-        totals[teamName] += xg;
+    shots.forEach(s => {
+        if (!totals[s.team]) totals[s.team] = 0;
+        totals[s.team] += s.xg;
     });
 
     for (let t in totals) {

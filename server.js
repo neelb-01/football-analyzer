@@ -5,16 +5,20 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 
+// xG modules
 const { calculateXG } = require("./xg/model");
 const { aggregateByPlayer, aggregateByTeam } = require("./xg/aggregate");
+const { getMatchMetadata } = require("./xg/metadata");
 
 const app = express();
 app.use(cors());
 app.use(express.static("frontend"));
 
-// ROUTES
+/* =========================
+   ROUTES
+========================= */
 
-// Match raw data
+// Raw match events
 app.get("/match/:id", (req, res) => {
     const matchId = req.params.id;
 
@@ -36,22 +40,22 @@ app.get("/match/:id", (req, res) => {
     res.json(data);
 });
 
-// xG endpoint
+// xG + metadata endpoint
 app.get("/xg/:id", (req, res) => {
     const matchId = req.params.id;
 
-    const filePath = path.join(
+    const eventsPath = path.join(
         __dirname,
         "data",
         "events",
         matchId + ".json"
     );
 
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(eventsPath)) {
         return res.status(404).json({ error: "Match not found" });
     }
 
-    const events = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    const events = JSON.parse(fs.readFileSync(eventsPath, "utf-8"));
 
     const shots = events.filter(
         e => e.type?.name === "Shot"
@@ -60,10 +64,13 @@ app.get("/xg/:id", (req, res) => {
     const result = calculateXG(shots);
 
     const playerTotals = aggregateByPlayer(result.shots);
-    const teamTotals = aggregateByTeam(shots, result.shots);
+    const teamTotals = aggregateByTeam(result.shots);
+
+    const metadata = getMatchMetadata(matchId);
 
     res.json({
         matchId,
+        metadata,
         shots: shots.length,
         totalXG: result.totalXG,
         teamTotals,
@@ -72,7 +79,9 @@ app.get("/xg/:id", (req, res) => {
     });
 });
 
-// SERVER
+/* =========================
+   SERVER
+========================= */
 
 const PORT = 3000;
 
