@@ -1,17 +1,22 @@
 # ⚽ Football Analyzer
 
-A full-stack football analytics web app that calculates and visualizes Expected Goals (xG) using real match event data.
+A full-stack football analytics web application that computes **Expected Goals (xG)** from real match event data and enriches it with **match metadata** such as teams, competition, season, and score.
+
+Built using **StatsBomb Open Data**, focusing on event-level football analytics and clean backend architecture.
 
 ---
 
 ## 🚀 Features
 
 - Node.js + Express backend  
-- File-based match database (JSON)  
-- xG calculation engine  
+- File-based football data (StatsBomb Open Data)  
+- Expected Goals (xG) calculation engine  
+- Shot-level xG breakdown  
+- Player-wise xG aggregation  
+- Team-wise xG aggregation  
+- Match metadata (competition, season, teams, score, date)  
 - REST API  
-- Web frontend  
-- Player shot analysis  
+- Web frontend (HTML, CSS, Vanilla JS) 
 
 ---
 
@@ -21,6 +26,7 @@ A full-stack football analytics web app that calculates and visualizes Expected 
 - Express  
 - Vanilla JavaScript  
 - HTML / CSS  
+- StatsBomb Open Data (JSON)
 
 ---
 
@@ -29,9 +35,24 @@ A full-stack football analytics web app that calculates and visualizes Expected 
 ```
 Football-Analyzer/
 │
-├── data/events/      # Match JSON files
-├── frontend/         # Website files
-├── server.js         # Backend server
+├── data/
+│ ├── events/ # Match event data
+│ ├── matches/ # Match metadata (competition, season, score)
+│ ├── lineups/ # Lineups and substitutions
+│ ├── three-sixty/ # Freeze-frame data (not yet used)
+│ └── competitions.json
+│
+├── frontend/ # Frontend files
+│ ├── index.html
+│ ├── style.css
+│ └── script.js
+│
+├── xg/
+│ ├── model.js # xG calculation logic
+│ ├── aggregate.js # Player & team aggregation
+│ └── metadata.js # Match metadata loader
+│
+├── server.js # Backend server
 ├── package.json
 └── README.md
 ```
@@ -72,7 +93,7 @@ http://localhost:3000
 ### Get match data
 
 ```
-GET /match/:id
+GET /xg/:id
 ```
 
 Example:
@@ -92,26 +113,47 @@ GET /xg/:id
 Example:
 
 ```
-http://localhost:3000/xg/7298
+http://localhost:3000/xg/3754058
 ```
 
 ---
 
 ## 📈 Example Output
 
-- Total shots  
-- Total xG  
-- Player-wise xG breakdown  
+- Total shots
+- Total xG
+- Player-wise xG breakdown
+- Team-wise xG totals
+- Team-wise xG totals
+- Per-shot xG breakdown 
 
 ---
 
 ## 📌 Status
 
-This project is under active development.  
-More features and improvements coming soon.
+This project is under active development.
+
+Planned improvements include:
+
+- Match list and selector UI
+- Shot map visualizations
+- Expected Threat (xT) model
+- Possession chains and build-up metrics
+- Per-90 statistics using lineup data
+- Improved frontend UI/UX
 
 ---
 
 ## 👤 Author
 
 Neel Bapat
+
+---
+
+## 📄 License
+
+This project uses StatsBomb Open Data, which is subject to their license terms.
+The code is intended for educational and non-commercial use.
+
+
+---
