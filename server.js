@@ -8,7 +8,7 @@ const path = require("path");
 // xG modules
 const { calculateXG } = require("./xg/model");
 const { aggregateByPlayer, aggregateByTeam } = require("./xg/aggregate");
-const { getMatchMetadata } = require("./xg/metadata");
+const { getMatchMetadata } = require("./data/getMatchMetadata");
 
 const app = express();
 app.use(cors());
@@ -55,27 +55,30 @@ app.get("/xg/:id", (req, res) => {
         return res.status(404).json({ error: "Match not found" });
     }
 
+    const metadata = getMatchMetadata(matchId);
+
+    if (!metadata) {
+        return res.status(404).json({ error: "Match metadata not found" });
+    }
+
     const events = JSON.parse(fs.readFileSync(eventsPath, "utf-8"));
 
     const shots = events.filter(
         e => e.type?.name === "Shot"
     );
 
-    const result = calculateXG(shots);
+    const xgResult = calculateXG(shots);
 
-    const playerTotals = aggregateByPlayer(result.shots);
-    const teamTotals = aggregateByTeam(result.shots);
-
-    const metadata = getMatchMetadata(matchId);
+    const playerTotals = aggregateByPlayer(xgResult.shots);
+    const teamTotals = aggregateByTeam(xgResult.shots);
 
     res.json({
-        matchId,
-        metadata,
+        match: metadata,
         shots: shots.length,
-        totalXG: result.totalXG,
+        totalXG: xgResult.totalXG,
         teamTotals,
         playerTotals,
-        breakdown: result.shots
+        breakdown: xgResult.shots
     });
 });
 
