@@ -9,6 +9,7 @@ const path = require("path");
 const { calculateXG } = require("./xg/model");
 const { aggregateByPlayer, aggregateByTeam } = require("./xg/aggregate");
 const { getMatchMetadata } = require("./data/getMatchMetadata");
+const { listAllMatches } = require("./data/listMatches");
 
 const app = express();
 app.use(cors());
@@ -38,6 +39,12 @@ app.get("/match/:id", (req, res) => {
 
     const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
     res.json(data);
+});
+
+// List available matches
+app.get("/matches", (req, res) => {
+    const matches = listAllMatches();
+    res.json(matches);
 });
 
 // xG + metadata endpoint
