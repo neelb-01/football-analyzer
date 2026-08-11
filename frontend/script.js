@@ -18,7 +18,10 @@ async function loadMatch() {
             return;
         }
 
-        let text = `Match ID: ${data.matchId}\n`;
+        // metadata lives under data.match, not on the root object
+        const m = data.match;
+        let text = `${m.homeTeam} ${m.score} ${m.awayTeam}\n`;
+        text += `${m.competition} ${m.season} — ${m.date}\n\n`;
         text += `Shots: ${data.shots}\n`;
         text += `xG: ${data.totalXG}\n\n`;
 
@@ -49,7 +52,7 @@ async function loadMatch() {
 
         // Individual shots
         data.breakdown.forEach(s => {
-            text += `${s.player}: ${s.xg}\n`;
+            text += `${s.minute}' ${s.player}: ${s.xg}${s.isGoal ? "  ⚽ GOAL" : ""}\n`;
         });
 
         output.textContent = text;
