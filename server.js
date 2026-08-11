@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 // xG modules
-const { calculateXG } = require("./xg/model");
+const { calculateXG, isCountableShot } = require("./xg/model");
 const { aggregateByPlayer, aggregateByTeam } = require("./xg/aggregate");
 const { getMatchMetadata } = require("./data/getMatchMetadata");
 const { listAllMatches } = require("./data/listMatches");
@@ -70,9 +70,8 @@ app.get("/xg/:id", (req, res) => {
 
     const events = JSON.parse(fs.readFileSync(eventsPath, "utf-8"));
 
-    const shots = events.filter(
-        e => e.type?.name === "Shot"
-    );
+    // isCountableShot also drops penalty shootouts, which are not part of match xG
+    const shots = events.filter(isCountableShot);
 
     const xgResult = calculateXG(shots);
 
