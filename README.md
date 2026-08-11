@@ -57,7 +57,6 @@ Football-Analyzer/
 │ └── tools/             # Feature extraction + model fitting pipeline
 │
 ├── server.js
-├── CLAUDE.md            # Notes for AI coding assistants
 ├── package.json
 └── README.md
 ```
