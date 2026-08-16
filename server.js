@@ -10,6 +10,7 @@ const { calculateXG, isCountableShot } = require("./xg/model");
 const { aggregateByPlayer, aggregateByTeam } = require("./xg/aggregate");
 const { getMatchMetadata } = require("./data/getMatchMetadata");
 const { listAllMatches } = require("./data/listMatches");
+const { getPlayerNames } = require("./data/getPlayerNames");
 
 const app = express();
 app.use(cors());
@@ -75,8 +76,18 @@ app.get("/xg/:id", (req, res) => {
 
     const xgResult = calculateXG(shots);
 
-    const playerTotals = aggregateByPlayer(xgResult.shots);
-    const teamTotals = aggregateByTeam(xgResult.shots);
+    // Swap the full registered name for the one people actually use, before
+    // aggregating — playerTotals is keyed by `player`.
+    const displayNames = getPlayerNames(matchId);
+
+    const breakdown = xgResult.shots.map(shot => ({
+        ...shot,
+        player: displayNames[shot.player] || shot.player,
+        playerFull: shot.player
+    }));
+
+    const playerTotals = aggregateByPlayer(breakdown);
+    const teamTotals = aggregateByTeam(breakdown);
 
     res.json({
         match: metadata,
@@ -84,7 +95,7 @@ app.get("/xg/:id", (req, res) => {
         totalXG: xgResult.totalXG,
         teamTotals,
         playerTotals,
-        breakdown: xgResult.shots
+        breakdown
     });
 });
 
