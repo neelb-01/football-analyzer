@@ -244,6 +244,9 @@ function calculateXG(shots) {
             team: event.team?.name || 'Unknown',
             xg: Number(xg.toFixed(3)),
             minute: event.minute,
+            second: event.second,
+            // pitch coords, StatsBomb 120x80, attacking towards x=120 — the shot map needs these
+            location: Array.isArray(event.location) ? event.location : null,
             outcome: event.shot?.outcome?.name || null,
             isGoal: event.shot?.outcome?.name === 'Goal',
             shotType: event.shot?.type?.name || null,
