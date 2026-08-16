@@ -1,20 +1,724 @@
+/* ==========================================================================
+   Football Analyzer — "Floodlit"
+
+   A pitch at 8pm under 2000-lux lamps: the sky behind the stands goes
+   blue-black, the grass desaturates, the line markings burn white, and the
+   lamps throw two colour temperatures. Those two temperatures — cold cyan
+   and sodium amber — are the team colours. They sit on the blue/yellow axis,
+   which survives every common colour-vision deficiency.
+   ========================================================================== */
+
+:root {
+    /* ground */
+    --night: #0B1014;
+    /* sky above the stands */
+    --turf: #131E1C;
+    /* the pitch panel */
+    --turf-mow: #16231F;
+    /* the alternate mown band */
+    --line: #1E2B2C;
+    /* structural rules */
+
+    /* ink */
+    --chalk: #E8EEEA;
+    /* line-marking white, green-cast */
+    --ghost: #7C8F8A;
+    /* secondary */
+
+    /* the two lamps */
+    --lamp: #7FD4E8;
+    /* cold floodlight — home */
+    --sodium: #F2A93B;
+    /* warm sodium vapour — away */
+
+    --f-display: "Haettenschweiler", "Franklin Gothic Demi Cond", "Arial Narrow", Impact, sans-serif;
+    --f-mono: "Cascadia Mono", Consolas, "SF Mono", Menlo, ui-monospace, monospace;
+
+    --gut: clamp(1.25rem, 4vw, 3.5rem);
+    --rule: 1px solid var(--line);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 body {
-    font-family: Arial;
-    background: #111;
-    color: white;
-    padding: 20px;
+    margin: 0;
+    background: var(--night);
+    color: var(--chalk);
+    font-family: var(--f-mono);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
 }
 
-input,
-button {
-    padding: 8px;
-    margin: 5px;
+:focus-visible {
+    outline: 2px solid var(--lamp);
+    outline-offset: 2px;
 }
 
-pre {
-    background: #222;
-    padding: 10px;
-    margin-top: 20px;
-    max-height: 400px;
-    overflow: auto;
+/* --------------------------------------------------------------- utility bar */
+
+.bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    align-items: center;
+    padding: 1rem var(--gut);
+    border-bottom: var(--rule);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--night) 92%, transparent);
+    backdrop-filter: blur(8px);
+}
+
+.wordmark {
+    margin: 0;
+    font-family: var(--f-display);
+    font-size: 0.9375rem;
+    line-height: 0.86;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--chalk);
+}
+
+.provenance {
+    margin: 0;
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ghost);
+    text-align: right;
+}
+
+.provenance b {
+    display: block;
+    font-weight: 400;
+    color: var(--lamp);
+}
+
+/* ------------------------------------------------------------- match picker */
+
+.picker {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    max-width: 34rem;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.picker-label {
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ghost);
+    flex: none;
+}
+
+#matchSearch {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--chalk);
+    font: inherit;
+    padding: 0.35rem 0;
+}
+
+#matchSearch::placeholder {
+    color: var(--ghost);
+}
+
+#matchSearch:focus {
+    outline: none;
+    border-bottom-color: var(--lamp);
+}
+
+.picker-list {
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0.25rem;
+    list-style: none;
+    max-height: 21rem;
+    overflow-y: auto;
+    background: #0D1519;
+    border: var(--rule);
+    z-index: 30;
+}
+
+.opt {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: baseline;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+}
+
+.opt-meta {
+    font-size: 0.625rem;
+    color: var(--ghost);
+    letter-spacing: 0.04em;
+}
+
+.opt-score {
+    color: var(--ghost);
+}
+
+.opt[aria-selected="true"],
+.opt:hover {
+    background: var(--line);
+}
+
+.opt[aria-selected="true"] .opt-score,
+.opt:hover .opt-score {
+    color: var(--chalk);
+}
+
+.picker-none {
+    padding: 0.6rem;
+    color: var(--ghost);
+}
+
+/* -------------------------------------------------------------------- stage */
+
+.stage {
+    max-width: 78rem;
+    margin: 0 auto;
+    padding: 0 var(--gut) 5rem;
+}
+
+/* --------------------------------------------------------------- empty/error */
+
+.empty {
+    display: grid;
+    grid-template-columns: minmax(0, 34rem) minmax(0, 1fr);
+    gap: clamp(2rem, 6vw, 5rem);
+    align-items: center;
+    padding: clamp(3rem, 12vh, 7rem) 0;
+}
+
+.empty-text {
+    min-width: 0;
+}
+
+.empty-pitch {
+    display: block;
+    width: 100%;
+    height: auto;
+    opacity: 0.6;
+}
+
+.empty-head {
+    font-family: var(--f-display);
+    text-transform: uppercase;
+    font-size: clamp(2.75rem, 9vw, 5.5rem);
+    line-height: 0.88;
+    letter-spacing: 0.005em;
+    margin: 0 0 1.25rem;
+}
+
+.empty-body {
+    margin: 0 0 2.25rem;
+    color: var(--ghost);
+    max-width: 30rem;
+}
+
+.empty-jump {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--rule);
+}
+
+.jump {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: baseline;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-bottom: var(--rule);
+    color: var(--chalk);
+    font: inherit;
+    padding: 0.7rem 0;
+    cursor: pointer;
+}
+
+.jump:hover {
+    color: var(--lamp);
+}
+
+.jump-note {
+    color: var(--ghost);
+    font-size: 0.6875rem;
+}
+
+.jump:hover .jump-note {
+    color: var(--lamp);
+}
+
+/* ---------------------------------------------------------- the dual scoreline
+   The signature. Goals and xG at the same size — solid, then hollow. */
+
+.score {
+    padding: clamp(2.5rem, 8vh, 5rem) 0 clamp(1rem, 3vh, 2rem);
+}
+
+.score-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: clamp(0.75rem, 3vw, 2.5rem);
+    /* sit the team names on the goals baseline, not between the two scorelines */
+    align-items: baseline;
+}
+
+.side {
+    margin: 0;
+    font-family: var(--f-display);
+    text-transform: uppercase;
+    font-size: clamp(1.125rem, 3.4vw, 2.5rem);
+    line-height: 1;
+    letter-spacing: 0.01em;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.side-home {
+    text-align: right;
+    color: var(--lamp);
+}
+
+.side-away {
+    text-align: left;
+    color: var(--sodium);
+}
+
+.tally {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    align-items: center;
+    column-gap: clamp(0.5rem, 2vw, 1.5rem);
+    /* display numerals set below 1 line-height overflow their line box —
+       the gap keeps the two scorelines from colliding */
+    row-gap: clamp(0.75rem, 2.5vw, 1.75rem);
+    text-align: center;
+}
+
+.num {
+    font-family: var(--f-display);
+    font-size: clamp(3.5rem, 13vw, 9rem);
+    line-height: 0.84;
+    letter-spacing: -0.01em;
+}
+
+.num-home {
+    color: var(--lamp);
+}
+
+.num-away {
+    color: var(--sodium);
+}
+
+/* hollow numerals — the xG scoreline */
+.num-xg {
+    color: transparent;
+    -webkit-text-stroke: 1.5px currentColor;
+    font-size: clamp(2.5rem, 10vw, 7rem);
+}
+
+.num-xg.num-home {
+    -webkit-text-stroke-color: var(--lamp);
+}
+
+.num-xg.num-away {
+    -webkit-text-stroke-color: var(--sodium);
+}
+
+/* Firefox < 49 and anything without text-stroke still needs readable numerals */
+@supports not (-webkit-text-stroke: 1px black) {
+    .num-xg {
+        color: inherit;
+        opacity: 0.55;
+    }
+
+    .num-xg.num-home {
+        color: var(--lamp);
+    }
+
+    .num-xg.num-away {
+        color: var(--sodium);
+    }
+}
+
+.sep {
+    font-family: var(--f-display);
+    color: #2C3D3E;
+    font-size: clamp(2rem, 7vw, 5rem);
+    line-height: 0.84;
+}
+
+.vh {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.sep-xg {
+    font-size: 0.625rem;
+    font-family: var(--f-mono);
+    letter-spacing: 0.14em;
+    color: var(--ghost);
+    text-transform: uppercase;
+    align-self: center;
+}
+
+.score-meta {
+    margin: clamp(1.5rem, 4vh, 2.5rem) 0 0;
+    text-align: center;
+    color: var(--ghost);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* -------------------------------------------------------------- panel + heads */
+
+.panel {
+    border-top: var(--rule);
+    padding-top: 1rem;
+    margin-top: clamp(2rem, 6vh, 3.5rem);
+    min-width: 0;
+}
+
+.head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0 0 1.25rem;
+}
+
+.head-title {
+    font-family: var(--f-display);
+    text-transform: uppercase;
+    font-size: 1.0625rem;
+    letter-spacing: 0.03em;
+    margin: 0;
+    line-height: 1;
+}
+
+.head-note {
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ghost);
+    text-align: right;
+}
+
+.split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 3rem);
+}
+
+/* -------------------------------------------------------------------- charts */
+
+.chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.grid-line {
+    stroke: var(--line);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+}
+
+.axis-text {
+    fill: var(--ghost);
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+}
+
+.race-line {
+    fill: none;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.race-goal-label {
+    fill: var(--chalk);
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+}
+
+/* the one motion moment: the match replays itself once */
+.race-draw {
+    stroke-dasharray: var(--len);
+    stroke-dashoffset: var(--len);
+    animation: draw 1100ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.race-pop {
+    opacity: 0;
+    animation: pop 320ms ease-out forwards;
+}
+
+@keyframes draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes pop {
+    from {
+        opacity: 0;
+        transform: translateY(3px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* ------------------------------------------------------------------ shot map */
+
+.pitch-turf {
+    fill: var(--turf);
+}
+
+.pitch-mow {
+    fill: var(--turf-mow);
+}
+
+.pitch-line {
+    fill: none;
+    stroke: #24332F;
+    stroke-width: 0.4;
+}
+
+.shot-dot {
+    stroke-width: 0.5;
+    vector-effect: non-scaling-stroke;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.25rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ghost);
+}
+
+.legend b {
+    font-weight: 400;
+    color: var(--chalk);
+}
+
+/* -------------------------------------------------------------- player table */
+
+.rank {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.rank-row {
+    display: grid;
+    grid-template-columns: 0.6rem minmax(0, 1fr) 5.5rem auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: var(--rule);
+}
+
+.rank-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rank-val {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.pip {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    display: block;
+}
+
+.bar-track {
+    width: 5.5rem;
+    height: 3px;
+    background: var(--line);
+}
+
+.bar-fill {
+    height: 3px;
+    display: block;
+}
+
+/* ------------------------------------------------------------------ shot log */
+
+.log {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+}
+
+.log th {
+    text-align: left;
+    font-weight: 400;
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ghost);
+    padding: 0 0.75rem 0.5rem 0;
+    border-bottom: var(--rule);
+}
+
+.log td {
+    padding: 0.45rem 0.75rem 0.45rem 0;
+    border-bottom: var(--rule);
+    vertical-align: middle;
+}
+
+.log .col-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.log-goal {
+    color: var(--chalk);
+}
+
+.log-goal .cell-player {
+    font-family: var(--f-display);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: 1rem;
+}
+
+.log-row {
+    color: var(--ghost);
+}
+
+.log-row .cell-xg {
+    color: var(--chalk);
+}
+
+.goal-tag {
+    font-size: 0.5625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0.1rem 0.35rem;
+    border: 1px solid currentColor;
+}
+
+.scroller {
+    overflow-x: auto;
+}
+
+/* ------------------------------------------------------------------ responsive */
+
+/* the shot type wraps to three lines on a phone and triples every row's height —
+   the map already carries this, so drop the column rather than squeeze it */
+@media (max-width: 640px) {
+    .col-shot {
+        display: none;
+    }
+
+    .log-goal .cell-player {
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 860px) {
+    .bar {
+        grid-template-columns: minmax(0, 1fr) auto;
+        row-gap: 0.85rem;
+    }
+
+    .picker {
+        order: 3;
+        grid-column: 1 / -1;
+        max-width: none;
+    }
+
+    .split {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .empty {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .empty-pitch {
+        display: none;
+    }
+
+    .score-grid {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        gap: 0.5rem;
+    }
+
+    .side-home,
+    .side-away {
+        text-align: center;
+    }
+
+    .side-away {
+        order: 3;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .race-draw,
+    .race-pop {
+        animation: none;
+        stroke-dashoffset: 0;
+        opacity: 1;
+    }
+
+    * {
+        transition: none !important;
+    }
 }

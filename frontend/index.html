@@ -1,19 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Football Analyzer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Football Analyzer — match xG</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <h1>⚽ Football Analyzer</h1>
+    <header class="bar">
+        <p class="wordmark">Football<br>Analyzer</p>
 
-    <input id="matchId" placeholder="Enter Match ID">
-    <button onclick="loadMatch()">Load Match</button>
+        <div class="picker">
+            <label class="picker-label" for="matchSearch">Match</label>
+            <input id="matchSearch" type="text" autocomplete="off" role="combobox" aria-expanded="false"
+                aria-controls="matchList" aria-autocomplete="list" placeholder="Search team, competition or ID">
+            <ul id="matchList" class="picker-list" role="listbox" aria-label="Matches" hidden></ul>
+        </div>
 
-    <pre id="output"></pre>
+        <p class="provenance">xG model<b>StatsBomb</b></p>
+    </header>
+
+    <main id="stage" class="stage">
+        <section class="empty" id="emptyState">
+            <div class="empty-text">
+                <h1 class="empty-head">Pick a match.</h1>
+                <p class="empty-body">
+                    Every shot in the StatsBomb open data, scored for chance quality and laid against
+                    what the scoreboard actually said.
+                </p>
+                <ul class="empty-jump" id="emptyJump"></ul>
+            </div>
+
+            <!-- the same half-pitch the shot map uses, waiting to be filled -->
+            <svg class="empty-pitch" viewBox="-1 -1 82 48" aria-hidden="true" focusable="false">
+                <rect class="pitch-turf" x="0" y="0" width="80" height="46" />
+                <rect class="pitch-mow" x="0" y="0" width="80" height="7.67" />
+                <rect class="pitch-mow" x="0" y="15.33" width="80" height="7.67" />
+                <rect class="pitch-mow" x="0" y="30.67" width="80" height="7.67" />
+                <g class="pitch-line">
+                    <rect x="0" y="0" width="80" height="46" />
+                    <rect x="18" y="0" width="44" height="18" />
+                    <rect x="30" y="0" width="20" height="6" />
+                    <path d="M 32 18 A 10 10 0 0 0 48 18" />
+                </g>
+                <line x1="36" y1="0" x2="44" y2="0" stroke="var(--chalk)" stroke-width="0.9" />
+            </svg>
+        </section>
+    </main>
 
     <script src="script.js"></script>
 </body>
