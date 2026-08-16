@@ -13,11 +13,12 @@ Built on **StatsBomb Open Data**, covering 3,464 matches and 88,023 shots.
 - Industry-grade xG: StatsBomb's own production model, read straight from the event data
 - A fitted logistic xG model as a fallback for shots without a published value
 - Penalty shootouts correctly excluded from match xG
-- Shot-level xG breakdown with minute, outcome, body part, and shot type
+- Shot-level xG breakdown with minute, second, pitch location, outcome, body part, and shot type
 - Player-wise and team-wise xG aggregation
+- Players named the way commentators name them, from the lineup files
 - Match metadata (competition, season, teams, score, date, stadium, referee)
 - REST API
-- Web frontend (HTML, CSS, vanilla JS)
+- Web frontend (HTML, CSS, vanilla JS, no build step): searchable match picker, dual scoreline, cumulative xG race chart, shot map, player ranking, and shot log
 
 ---
 
@@ -39,15 +40,16 @@ Football-Analyzer/
 ├── data/
 │ ├── events/            # Match event data (~9.8 GB)
 │ ├── matches/           # Match metadata, by competition/season
-│ ├── lineups/           # Lineups and substitutions (not yet used)
-│ ├── three-sixty/       # Freeze-frame data (not yet used)
+│ ├── lineups/           # Lineups and substitutions — source of display names
+│ ├── three-sixty/       # Full-frame tracking data (not yet used)
 │ ├── competitions.json
 │ ├── getMatchMetadata.js
+│ ├── getPlayerNames.js  # Full registered name -> nickname
 │ └── listMatches.js
 │
 ├── frontend/
 │ ├── index.html
-│ ├── style.css
+│ ├── style.css          # Design direction documented at the top
 │ └── script.js
 │
 ├── xg/
@@ -94,7 +96,7 @@ Run it from the repository root — the server resolves `data/` relative to the 
 http://localhost:3000
 ```
 
-Enter a match ID and click **Load Match**. Use `GET /matches` to find IDs.
+Search for a match by team, competition, or ID in the header — the picker is loaded from `/matches` and filtered as you type. The empty state also offers a few matches worth looking at. Every loaded match gets a hash URL (`http://localhost:3000/#3773565`) that can be shared or bookmarked.
 
 ---
 
@@ -150,9 +152,12 @@ Example: `http://localhost:3000/xg/3773565`
   "breakdown": [
     {
       "player": "Antoine Griezmann",
+      "playerFull": "Antoine Griezmann",
       "team": "Barcelona",
       "xg": 0.418,
       "minute": 11,
+      "second": 34,
+      "location": [110.2, 42.1],
       "outcome": "Goal",
       "isGoal": true,
       "shotType": "Open Play",
@@ -163,7 +168,15 @@ Example: `http://localhost:3000/xg/3773565`
 }
 ```
 
+`location` is the shot's pitch coordinate on StatsBomb's 120×80 grid, attacking towards `x = 120`; the shot map is drawn from it.
+
 Unknown or malformed match IDs return `404` with a JSON `error` field.
+
+### Player names
+
+StatsBomb event data carries only the full registered name — "Lionel Andrés Messi Cuccittini". The lineup files carry `player_nickname` for exactly this, so `player` is the nickname where one exists and `playerFull` always keeps the registered name. `playerTotals` is keyed by the display name.
+
+No surname heuristic can replace this: Iberian double surnames want the second-to-last token ("Messi") and French middle names want the last ("Theo Bernard François Hernández" → "Hernández"). About a third of players carry a nickname; the rest already have a short registered name.
 
 ---
 
@@ -207,11 +220,26 @@ Then paste the coefficients into `FITTED_MODEL` in `xg/model.js`. `SWEEP=1` runs
 
 ---
 
+## 🖥 The frontend
+
+Three hand-written files, no build step and no framework, served by the same Express process and fetched same-origin. A single `GET /xg/:id` backs the whole page:
+
+- **Scoreline** — goals and xG on the same line, goals solid and xG hollow, so the two readings of the match sit side by side.
+- **xG race** — cumulative xG for both sides across the match clock, with goals marked where they happened.
+- **Shot map** — every shot on a half pitch. Dot area is xG, solid means goal. Cropped to 46 units of pitch depth (99.4% of shots land within 40 of the goal line) with the rare long-range effort pinned to the back edge rather than dropped; the crop is fixed rather than per-match so maps stay comparable.
+- **Chances by player** and a chronological **shot log**.
+
+The match picker is a combobox over all 3,464 matches (~0.5 MB, fetched once and filtered client-side), keyboard-navigable, matching on team, competition, or ID.
+
+The palette is a night match under floodlights, and the two team colours are the two lamp temperatures — cold cyan for home, sodium amber for away. That pairing sits on the blue/yellow axis and stays distinguishable under every common colour-vision deficiency, so team identity is carried by those two colours everywhere: scoreline, race chart, shot map, pips, and bars. The reasoning is written up at the top of `style.css`.
+
+---
+
 ## ⚠️ Limitations
 
 - **This is a local development server, not a hardened one.** Match IDs are interpolated into file paths without validation, so `GET /match/:id` can be coaxed into reading `.json` files outside `data/events` via a traversal sequence, and its 404 response echoes absolute host paths. Don't expose this server to a network as-is.
 - Match metadata is resolved by scanning every competition/season file on each request, with no caching, so response times grow with the dataset.
-- `data/lineups/` and `data/three-sixty/` are downloaded but not yet used.
+- `data/lineups/` is read only for display names; `data/three-sixty/` is downloaded but not yet used.
 - There is no test suite; `npm test` is a placeholder that exits 1.
 
 ---
@@ -222,12 +250,11 @@ This project is under active development.
 
 Planned improvements include:
 
-- Match list and selector UI (the `/matches` endpoint exists but the frontend doesn't use it)
-- Shot map visualizations
+- Caching for match metadata, so `/xg/:id` stops rescanning every competition file
 - Expected Threat (xT) model
 - Possession chains and build-up metrics
 - Per-90 statistics using lineup data
-- Improved frontend UI/UX
+- Pressure and off-ball context from `data/three-sixty/`
 
 ---
 
