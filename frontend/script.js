@@ -1,7 +1,13 @@
 /* Football Analyzer — "Floodlit"
    Renders one match: the dual scoreline, the xG race, the shot map, the log. */
 
-const API = "";               // same origin — the express server serves this page
+/* The data is static. `npm run build` bakes what the API used to compute into
+   frontend/api/, so these are plain files — served by the express server in dev
+   and by the host in production, with no route doing 12 GB of work per request.
+   Relative paths, so the site works from any mount point. */
+const MATCH_LIST = "api/matches.json";
+const matchFile = (id) => `api/xg/${id}.json`;
+
 const HOME = "var(--lamp)";   // cold floodlight
 const AWAY = "var(--sodium)"; // warm sodium
 
@@ -42,7 +48,7 @@ function prettyDate(iso) {
 
 async function loadMatchList() {
     try {
-        const res = await fetch(`${API}/matches`);
+        const res = await fetch(MATCH_LIST);
         allMatches = await res.json();
         allMatches.sort((a, b) => (a.date < b.date ? 1 : -1));
         renderJumps();
@@ -512,7 +518,7 @@ async function loadMatch(id) {
     showMessage("Loading…", `Reading every shot in match ${id}.`);
 
     try {
-        const res = await fetch(`${API}/xg/${id}`);
+        const res = await fetch(matchFile(id));
         if (!res.ok) {
             showMessage("No match there.", `Nothing in the data for ID ${id}. Search by team name instead.`);
             return;
@@ -526,7 +532,7 @@ async function loadMatch(id) {
         history.replaceState(null, "", `#${id}`);
         window.scrollTo({ top: 0 });
     } catch {
-        showMessage("Can't reach the server.", "Start it with `node server.js`, then reload this page.");
+        showMessage("Couldn't load that match.", "Check your connection and try again.");
     }
 }
 
