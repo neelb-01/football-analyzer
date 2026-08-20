@@ -1,0 +1,29 @@
+# What gets uploaded is frontend/ and nothing else.
+#
+# Without this the CLI uploads data/ as well — 12 GB across 7,333 files — and
+# the deploy dies during upload with an empty "Unexpected error ()".
+#
+# `npm run build` fills frontend/api/ with the JSON the site reads. Everything
+# that produced it stays on this machine, package.json included: with no
+# package.json up there, Vercel has no build script to find and runs none. The
+# site is already built.
+#
+# Note this file REPLACES .gitignore for deploys rather than adding to it, so
+# node_modules has to be named here too.
+#
+# Every pattern is anchored with a leading slash. Without it these match at any
+# depth — a bare `xg` also excludes frontend/api/xg/, which silently ships a
+# site whose every match 404s while the upload still "succeeds" at 541 KB.
+
+/data
+/node_modules
+/xg
+/tools
+/server.js
+/package.json
+/package-lock.json
+/README.md
+/CLAUDE.md
+/.claude
+/.git
+/.env*

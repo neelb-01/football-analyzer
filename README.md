@@ -82,21 +82,29 @@ cd football-analyzer
 npm install
 ```
 
-### 3. Start the server
+### 3. Build the match data
 
 ```bash
-node server.js
+npm run build
+```
+
+This reads all 3,464 matches out of `data/` and writes the finished xG for each one to `frontend/api/` — about 23 MB, roughly four minutes. The page reads those files directly, so **it stays empty until this has run once.** Re-run it after changing the model or the data.
+
+### 4. Start the server
+
+```bash
+npm start
 ```
 
 Run it from the repository root — the server resolves `data/` relative to the working directory. The port is hardcoded to `3000`.
 
-### 4. Open in browser
+### 5. Open in browser
 
 ```
 http://localhost:3000
 ```
 
-Search for a match by team, competition, or ID in the header — the picker is loaded from `/matches` and filtered as you type. The empty state also offers a few matches worth looking at. Every loaded match gets a hash URL (`http://localhost:3000/#3773565`) that can be shared or bookmarked.
+Search for a match by team, competition, or ID in the header — the picker is loaded from `api/matches.json` and filtered as you type. The empty state also offers a few matches worth looking at. Every loaded match gets a hash URL (`http://localhost:3000/#3773565`) that can be shared or bookmarked.
 
 ---
 
@@ -222,7 +230,7 @@ Then paste the coefficients into `FITTED_MODEL` in `xg/model.js`. `SWEEP=1` runs
 
 ## 🖥 The frontend
 
-Three hand-written files, no build step and no framework, served by the same Express process and fetched same-origin. A single `GET /xg/:id` backs the whole page:
+Three hand-written files, no bundler and no framework, fetched same-origin. A single `api/xg/<id>.json` — the baked form of `GET /xg/:id` — backs the whole page:
 
 - **Scoreline** — goals and xG on the same line, goals solid and xG hollow, so the two readings of the match sit side by side.
 - **xG race** — cumulative xG for both sides across the match clock, with goals marked where they happened.
@@ -235,10 +243,25 @@ The palette is a night match under floodlights, and the two team colours are the
 
 ---
 
+## ☁️ Deploying
+
+The site deploys to Vercel as static files. Nothing runs server-side.
+
+```bash
+npm run build     # writes frontend/api/
+vercel --prod     # uploads frontend/ only
+```
+
+`data/` is 12 GB across 7,333 files — more than any host will take, and none of it needs to be there. Every shot in every match, with xG resolved, comes to about 23 MB, so the deploy ships that and leaves the raw event data behind. `.vercelignore` keeps `data/`, `xg/`, `tools/` and `server.js` out of the upload; `vercel.json` points the host at `frontend/`.
+
+Deploy from the CLI rather than connecting the Git repository — a Git deploy would clone all 12 GB and fail.
+
+---
+
 ## ⚠️ Limitations
 
-- **This is a local development server, not a hardened one.** Match IDs are interpolated into file paths without validation, so `GET /match/:id` can be coaxed into reading `.json` files outside `data/events` via a traversal sequence, and its 404 response echoes absolute host paths. Don't expose this server to a network as-is.
-- Match metadata is resolved by scanning every competition/season file on each request, with no caching, so response times grow with the dataset.
+- **This is a local development server, not a hardened one.** Match IDs are interpolated into file paths without validation, so `GET /match/:id` can be coaxed into reading `.json` files outside `data/events` via a traversal sequence, and its 404 response echoes absolute host paths. Don't expose this server to a network as-is. The deployed site is unaffected — it is static files with no server-side code.
+- The deployed site is a snapshot. New matches appear only after `npm run build` is re-run and the site redeployed.
 - `data/lineups/` is read only for display names; `data/three-sixty/` is downloaded but not yet used.
 - There is no test suite; `npm test` is a placeholder that exits 1.
 
@@ -250,7 +273,6 @@ This project is under active development.
 
 Planned improvements include:
 
-- Caching for match metadata, so `/xg/:id` stops rescanning every competition file
 - Expected Threat (xT) model
 - Possession chains and build-up metrics
 - Per-90 statistics using lineup data
