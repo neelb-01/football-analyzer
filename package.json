@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node tools/build-static.js",
     "start": "node server.js",
+    "deploy": "vercel --prod && bash tools/mark-deployed.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
