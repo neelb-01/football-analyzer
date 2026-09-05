@@ -1,4 +1,4 @@
-/* Football Analyzer — "Floodlit"
+/* Floodlit xG
    Renders one match: the dual scoreline, the xG race, the shot map, the log. */
 
 /* The data is static. `npm run build` bakes what the API used to compute into
@@ -10,6 +10,10 @@ const matchFile = (id) => `api/xg/${id}.json`;
 
 const HOME = "var(--lamp)";   // cold floodlight
 const AWAY = "var(--sodium)"; // warm sodium
+
+/* The tab name is written once, in index.html; read it back rather than
+   repeating it here, so the two can never drift apart. */
+const SITE = document.title;
 
 const stage = document.getElementById("stage");
 const search = document.getElementById("matchSearch");
@@ -171,6 +175,7 @@ function renderJumps() {
 }
 
 function showMessage(head, body) {
+    document.title = SITE;   // loading and the error states are not a match
     stage.innerHTML = `
     <section class="empty">
       <div class="empty-text">
@@ -388,6 +393,9 @@ function render(data) {
     const shots = data.breakdown;
     const home = m.homeTeam;
     const away = m.awayTeam;
+
+    // the tab and any bookmark should name the match, not just the site
+    document.title = `${home} v ${away} — ${SITE}`;
 
     const goalsMatch = /(\d+)\D+(\d+)/.exec(m.score) || [0, "0", "0"];
     const xgHome = data.teamTotals[home] || 0;
