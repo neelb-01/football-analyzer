@@ -1,4 +1,4 @@
-# ⚽ Football Analyzer
+# ⚽ Floodlit xG
 
 A full-stack football analytics web application that reports **Expected Goals (xG)** from real match event data and enriches it with **match metadata** such as teams, competition, season, and score.
 
@@ -37,7 +37,7 @@ Built on **StatsBomb Open Data**, covering 3,464 matches and 88,023 shots.
 ## 📂 Project Structure
 
 ```
-Football-Analyzer/
+Floodlit-xG/
 │
 ├── data/
 │ ├── events/            # Match event data (~9.8 GB)
@@ -247,6 +247,8 @@ Three hand-written files, no bundler and no framework, fetched same-origin. A si
 - **xG race** — cumulative xG for both sides across the match clock, with goals marked where they happened.
 - **Shot map** — every shot on a half pitch. Dot area is xG, solid means goal. Cropped to 46 units of pitch depth (99.4% of shots land within 40 of the goal line) with the rare long-range effort pinned to the back edge rather than dropped; the crop is fixed rather than per-match so maps stay comparable.
 - **Chances by player** and a chronological **shot log**.
+
+The wordmark in the header is a link back to the empty state, and the tab title names whatever you are looking at — `Granada v Barcelona — Floodlit xG` — so a bookmarked deep link says which match it is.
 
 The match picker is a combobox over all 3,464 matches (~0.5 MB, fetched once and filtered client-side), keyboard-navigable, matching on team, competition, or ID.
 
