@@ -88,6 +88,11 @@ body {
     letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--chalk);
+    text-decoration: none;
+}
+
+.wordmark:hover {
+    color: var(--lamp);
 }
 
 .provenance {
